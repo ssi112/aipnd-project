@@ -13,10 +13,10 @@ For this project we will have three image datasets: one for training our classif
 To help improve accuracy our training images will be randomly flipped and all three image sets will be shuffled as images are fed into our model. Refer to the Jupyter notebook for specific transformations and data loader settings.
 
 **Inference and Validation**
+Once the network is trained, that is it has learned to recognize the flower images, it is then used in inference in that it is tested on new images to see how well it works. See the blog link below for a discussion on the difference between inference and training.
 
 **Create a Checkpoint and Save Model**
-Once our model is trained we want to save it for reuse later.
-
+Once our model is trained we want to save it for reuse later. We'll do this by creating a function that takes a single image and saved model and returning the top five most likely flowers for the given image. 
 
 **Additonal Information**
  * Information about tuning Torch Vision models is found [here](https://pytorch.org/tutorials/beginner/finetuning_torchvision_models_tutorial.html).
@@ -24,7 +24,8 @@ Once our model is trained we want to save it for reuse later.
  * Intro to [Transfer Learning](https://machinelearningmastery.com/transfer-learning-for-deep-learning/)
  * Understanding Softmax and Negative Log-Likelihood can be found in this [notebook](https://ljvmiranda921.github.io/notebook/2017/08/13/softmax-and-the-negative-log-likelihood/)
   * PyTorch [Save Checkpoint](https://pytorch.org/tutorials/beginner/saving_loading_models.html)
-  
+  * Difference between training and inference [blog link](https://blogs.nvidia.com/blog/2016/08/22/difference-deep-learning-training-inference-ai/)
+   * CNN [Tutorial](https://adventuresinmachinelearning.com/convolutional-neural-networks-tutorial-in-pytorch/) with PyTorch
  
  
  
