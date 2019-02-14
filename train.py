@@ -267,4 +267,3 @@ def main():
 # let's run this thing
 if __name__ == '__main__':
 	main()
-	# hypnotic#99ClamBake
