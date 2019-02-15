@@ -101,4 +101,7 @@ ENV/
 .mypy_cache/
 
 # flowers images dataset
-flower_data
+flowers
+
+# stored model checkpoints
+checkpoints
