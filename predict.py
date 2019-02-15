@@ -3,7 +3,13 @@
 #
 # USAGE:
 #	python predict.py --data_dir flowers --save_dir checkpoints --path_to_image /9/image_06410.jpg
-#                                                                            
+#
+# Some Example files for testing:
+# 	/3/image_06634.jpg
+#	/7/image_07215.jpg
+#	/33/image_06460.jpg
+#	/71/image_04514.jpg
+#
 # PROGRAMMER: Steve S Isenberg
 # DATE CREATED: February 14, 2019
 # REVISED DATE: 
@@ -22,6 +28,7 @@ import time
 import numpy as np
 import pandas as pd
 import argparse
+import os
 from PIL import Image
 
 # ***********************
@@ -73,7 +80,6 @@ def process_image(image):
 	img = np.array(img)
 	# RGB values are 8-bit: 0 to 255
 	# dividing by 255 gives us a range from 0.0 to 1.0
-	# won't work properly without this
 	img = img / 255
 	img_norm = (img - img_mean) / img_std
 	img_norm = np.transpose(img_norm, (2, 0, 1))
@@ -85,7 +91,7 @@ def predict(image_path, model, topk=5):
     Predict the class (or classes) of an image using a trained deep learning model.
 
     """
-    # TODO: Implement the code to predict the class from an image file
+    # implement the code to predict the class from an image file
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model.to(device)
     model.eval() # inference mode
@@ -131,9 +137,6 @@ def show_prediction(probs, classes):
 	with open('cat_to_name.json', 'r') as f:
 		cat_to_name = json.load(f)
 	flower_names = [cat_to_name[i] for i in classes]
-	# print('probabilities: ', probs)
-	# print('top 5 classes: ', classes)
-	# print(flower_names)
 
 	df = pd.DataFrame(
 		{'flowers': pd.Series(data=flower_names),
@@ -163,7 +166,7 @@ def get_input_args():
     parser = argparse.ArgumentParser()
     
     # command line options
-    parser.add_argument('--data_dir', type = str, default = 'flower_data/', 
+    parser.add_argument('--data_dir', type = str, default = 'flowers/', 
                          help = 'Path to the folder of the flower images')
     parser.add_argument('--save_dir', type = str, default = 'checkpoints', 
                          help = 'Path to save the model checkpoints')
@@ -185,10 +188,13 @@ def main():
 	print('save_dir: {}'.format(in_arg.save_dir))
 	print('image_file: {}\n'.format(test_dir+image_file))
 	print('')
-	model, class_to_idx = load_saved_checkpoint(in_arg.save_dir+'/trainpy_checkpoint.pth')
-	#
-	probs, classes = predict(test_dir+image_file, model, topk=5)
-	show_prediction(probs, classes)
+	# make sure checkpoint exists
+	if os.path.exists(in_arg.save_dir+'/trainpy_checkpoint.pth'):
+		model, class_to_idx = load_saved_checkpoint(in_arg.save_dir+'/trainpy_checkpoint.pth')
+		probs, classes = predict(test_dir+image_file, model, topk=5)
+		show_prediction(probs, classes)
+	else:
+		print('Oops, checkpoint does NOT exist! ({})'.format(in_arg.save_dir+'/trainpy_checkpoint.pth'))
 	return 
 
 

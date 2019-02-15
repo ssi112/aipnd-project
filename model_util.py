@@ -33,7 +33,7 @@ def get_input_args():
     parser = argparse.ArgumentParser()
     
     # command line options
-    parser.add_argument('--data_dir', type = str, default = 'flower_data/', 
+    parser.add_argument('--data_dir', type = str, default = 'flowers/', 
                          help = 'Path to the folder of the flower images')
     parser.add_argument('--save_dir', type = str, default = 'checkpoints', 
                          help = 'Path to save the model checkpoints')

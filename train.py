@@ -31,7 +31,7 @@ from model_util import get_input_args, make_folder
 # ✔ test the network - print accuracy
 # ✔ save the checkpoint
 
-data_dir = 'flower_data'	# default - can be supplied by user
+data_dir = 'flowers'	# default - can be supplied by user
 train_dir = data_dir + '/train'
 valid_dir = data_dir + '/valid'
 test_dir = data_dir + '/test'
@@ -259,6 +259,8 @@ def main():
 	label_mapping()
 	build_train_network(lr)
 	test_network()
+	# just in case the checkpoint folder doesn't exist...
+	make_folder(in_arg.save_dir)
 	save_checkpoint(in_arg.save_dir)
 	print('\ndone...')
 	return 
