@@ -1,14 +1,14 @@
 # IMAGE CLASSIFIER COMMAND LINE APPLICATION
-# 	predict.py
+#   predict.py
 #
 # USAGE:
-#	python predict.py --data_dir flowers --save_dir checkpoints --path_to_image /9/image_06410.jpg
+#   python predict.py --data_dir flowers --save_dir checkpoints --path_to_image /9/image_06410.jpg
 #
 # Some Example files for testing:
-# 	/3/image_06634.jpg
-#	/7/image_07215.jpg
-#	/33/image_06460.jpg
-#	/71/image_04514.jpg
+#   /3/image_06634.jpg
+#   /7/image_07215.jpg
+#   /33/image_06460.jpg
+#   /71/image_04514.jpg
 #
 # PROGRAMMER: Steve S Isenberg
 # DATE CREATED: February 14, 2019
@@ -16,7 +16,7 @@
 # PURPOSE: 
 #   Uses a trained network to predict the flower name of the input image.
 #   Receives a single file name 
-#	Returns the flower name and top K most likely class probabilities
+#   Returns the flower name and top K most likely class probabilities
 #
 # Import modules
 import torch
@@ -41,49 +41,49 @@ from PIL import Image
 # ✔ command line args
 
 def load_saved_checkpoint(model_path):
-	"""
-	loads a saved checkpoint and rebuilds the model
-	"""
-	saved_model = torch.load(model_path)
-	model = saved_model['model']
-	model.classifier = saved_model['classifier']
-	model.load_state_dict(saved_model['model_state'])
-	model.class_to_idx = saved_model['model_class_index']
-	optimizer = saved_model['optimizer_state']
-	epochs = saved_model['epochs']
-	for param in model.parameters():
-	    param.requires_grad = False
-	return model, saved_model['model_class_index']
+    """
+    loads a saved checkpoint and rebuilds the model
+    """
+    saved_model = torch.load(model_path)
+    model = saved_model['model']
+    model.classifier = saved_model['classifier']
+    model.load_state_dict(saved_model['model_state'])
+    model.class_to_idx = saved_model['model_class_index']
+    optimizer = saved_model['optimizer_state']
+    epochs = saved_model['epochs']
+    for param in model.parameters():
+        param.requires_grad = False
+    return model, saved_model['model_class_index']
 
 
 def process_image(image):
-	''' 
-	Process a PIL image for use in a PyTorch model
-	Scales, crops, and normalizes a PIL image for a PyTorch model,
-	'''
-	img_mean = np.array([0.485, 0.456, 0.406])
-	img_std  = np.array([0.229, 0.224, 0.225])
-	img = Image.open(image)
-	img = img.resize((256,256))
+    ''' 
+    Process a PIL image for use in a PyTorch model
+    Scales, crops, and normalizes a PIL image for a PyTorch model,
+    '''
+    img_mean = np.array([0.485, 0.456, 0.406])
+    img_std  = np.array([0.229, 0.224, 0.225])
+    img = Image.open(image)
+    img = img.resize((256,256))
 
-	# just checking
-	width, height = img.size
-	# print('width={} height={}'.format(width, height))
+    # just checking
+    width, height = img.size
+    # print('width={} height={}'.format(width, height))
 
-	left = (width - 224) / 2
-	top = (height - 224) / 2
-	right = (width + 224) / 2
-	bottom = (height + 224) / 2
-	img = img.crop((left, top, right, bottom)) #crop out center
+    left = (width - 224) / 2
+    top = (height - 224) / 2
+    right = (width + 224) / 2
+    bottom = (height + 224) / 2
+    img = img.crop((left, top, right, bottom)) #crop out center
 
-	# make this a numpy array
-	img = np.array(img)
-	# RGB values are 8-bit: 0 to 255
-	# dividing by 255 gives us a range from 0.0 to 1.0
-	img = img / 255
-	img_norm = (img - img_mean) / img_std
-	img_norm = np.transpose(img_norm, (2, 0, 1))
-	return torch.Tensor(img_norm) # convert back to PyTorch tensor
+    # make this a numpy array
+    img = np.array(img)
+    # RGB values are 8-bit: 0 to 255
+    # dividing by 255 gives us a range from 0.0 to 1.0
+    img = img / 255
+    img_norm = (img - img_mean) / img_std
+    img_norm = np.transpose(img_norm, (2, 0, 1))
+    return torch.Tensor(img_norm) # convert back to PyTorch tensor
 
 
 def predict(image_path, model, topk=5):
@@ -131,18 +131,18 @@ def predict(image_path, model, topk=5):
 
 
 def show_prediction(probs, classes):
-	"""
-	Display probabilites and name from the image
-	"""
-	with open('cat_to_name.json', 'r') as f:
-		cat_to_name = json.load(f)
-	flower_names = [cat_to_name[i] for i in classes]
+    """
+    Display probabilites and name from the image
+    """
+    with open('cat_to_name.json', 'r') as f:
+        cat_to_name = json.load(f)
+    flower_names = [cat_to_name[i] for i in classes]
 
-	df = pd.DataFrame(
-		{'flowers': pd.Series(data=flower_names),
-		 'probabilities': pd.Series(data=probs, dtype='float64')
-		})
-	print(df)
+    df = pd.DataFrame(
+        {'flowers': pd.Series(data=flower_names),
+         'probabilities': pd.Series(data=probs, dtype='float64')
+        })
+    print(df)
 
 
 def get_input_args():
@@ -176,29 +176,29 @@ def get_input_args():
 
 
 def main():
-	"""
-	"""
-	in_arg = get_input_args()
-	data_dir = in_arg.data_dir
-	test_dir = data_dir + 'test'
-	image_file = in_arg.path_to_image
-	print('')
-	print('data_dir: {}'.format(data_dir))
-	print('test_dir: {}'.format(test_dir))
-	print('save_dir: {}'.format(in_arg.save_dir))
-	print('image_file: {}\n'.format(test_dir+image_file))
-	print('')
-	# make sure checkpoint exists
-	if os.path.exists(in_arg.save_dir+'/trainpy_checkpoint.pth'):
-		model, class_to_idx = load_saved_checkpoint(in_arg.save_dir+'/trainpy_checkpoint.pth')
-		probs, classes = predict(test_dir+image_file, model, topk=5)
-		show_prediction(probs, classes)
-	else:
-		print('Oops, checkpoint does NOT exist! ({})'.format(in_arg.save_dir+'/trainpy_checkpoint.pth'))
-	return 
+    """
+    """
+    in_arg = get_input_args()
+    data_dir = in_arg.data_dir
+    test_dir = data_dir + 'test'
+    image_file = in_arg.path_to_image
+    print('')
+    print('data_dir: {}'.format(data_dir))
+    print('test_dir: {}'.format(test_dir))
+    print('save_dir: {}'.format(in_arg.save_dir))
+    print('image_file: {}\n'.format(test_dir+image_file))
+    print('')
+    # make sure checkpoint exists
+    if os.path.exists(in_arg.save_dir+'/trainpy_checkpoint.pth'):
+        model, class_to_idx = load_saved_checkpoint(in_arg.save_dir+'/trainpy_checkpoint.pth')
+        probs, classes = predict(test_dir+image_file, model, topk=5)
+        show_prediction(probs, classes)
+    else:
+        print('Oops, checkpoint does NOT exist! ({})'.format(in_arg.save_dir+'/trainpy_checkpoint.pth'))
+    return 
 
 
 # let's run this thing
 if __name__ == '__main__':
-	main()
+    main()
 

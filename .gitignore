@@ -105,3 +105,5 @@ flowers
 
 # stored model checkpoints
 checkpoints
+
+*.zip
