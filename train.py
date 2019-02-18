@@ -18,6 +18,8 @@ import torch.nn.functional as F
 from torchvision import datasets, transforms, models
 import time
 import numpy as np
+from torch.autograd import Variable
+from collections import OrderedDict
 import json
 from model_util import get_input_args, make_folder
 
@@ -104,6 +106,26 @@ def label_mapping():
     # return
 
 
+def run_validation(model, valid_data_loader, criterion):
+    valid_loss = valid_accuracy = 0
+    for images, labels in valid_data_loader:
+        # Variable() - Wraps a tensor and records the operations applied to it
+        # https://pytorch.org/docs/0.3.1/_modules/torch/autograd/variable.html
+        images = Variable(images)
+        labels = Variable(labels)
+        images, labels = images.to(device), labels.to(device)
+        
+        output = model.forward(images)
+        valid_loss += criterion(output, labels).item()
+        
+        ps = torch.exp(output)  # softmax log probability
+        equality = (labels.data == ps.max(dim = 1)[1])
+        # mean() is not a method on the tensor, 
+        # so convert the type to a float tensor to use mean()
+        valid_accuracy += equality.type_as(torch.FloatTensor()).mean()
+    return valid_loss, valid_accuracy
+
+
 def build_train_network(learning_rate=0.001):
     """
     Uses PyTorch pretrained densenet121 CNN
@@ -155,7 +177,6 @@ def build_train_network(learning_rate=0.001):
     start_time = time.time()
     print('   begin training...\n')
     model = model.train()
-
     for epoch in range(epochs):
         model.to(device)
         running_loss = 0
@@ -172,10 +193,23 @@ def build_train_network(learning_rate=0.001):
             
             running_loss += loss.item()
             if steps % print_every == 0:
+                # Make sure network is in evaluation mode for inference
+                # turns dropout OFF
+                model.eval()
+                model.to(device)
+                # Turn off gradients for validation, saves memory and 
+                # computations when doing validation
+                with torch.no_grad():
+                    valid_loss, valid_accuracy = run_validation(model, dataloaders['valid_loader'], criterion)
                 print("Epoch: {} of {}... ".format(epoch+1, epochs),
-                      "Loss: {:.4f}".format(running_loss / print_every))
+                      "Training Loss: {:.4f}".format(running_loss / print_every),
+                      "Validation Loss: {:.4f}...".format(valid_loss / len(dataloaders['valid_loader'])),
+                      "Validation Accuracy: {:.4f}...".format(valid_accuracy / len(dataloaders['valid_loader']))
+                     )
                 running_loss = 0
-
+                # Make sure training is back on - turns dropout ON
+                model.train()
+    # output the training and validation stats
     end_time = time.time()
     elapsed_time = end_time - start_time
     print('Completed {:02d} epoch{} using device: {}'.format(epochs, 's' if epochs > 1 else '', device))
@@ -227,7 +261,7 @@ def save_checkpoint(ckpt_path):
         'output_size': output_size,
         'batch_size': batch,
         'epochs': epochs,
-        'model': models.densenet121(pretrained=True),
+        'arch_name': 'densenet121',
         'classifier': model.classifier,
         'model_class_index': image_datasets['train_data'].class_to_idx,
         'model_state': model.state_dict(),
@@ -235,7 +269,7 @@ def save_checkpoint(ckpt_path):
         'model_loss': loss
     }
 
-    # if folder doesn't exit it will create it
+    # if folder doesn't exist it will create it
     make_folder(ckpt_path)
     # trainpy_checkpoint.pth here to distinguish it from jupyter notebook
     torch.save(model_check_point, ckpt_path+'/trainpy_checkpoint.pth')

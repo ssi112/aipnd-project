@@ -23,6 +23,7 @@ import torch
 from torch import nn
 from torch import optim
 import json
+import torchvision 
 from torchvision import datasets, transforms, models
 import time
 import numpy as np
@@ -45,7 +46,11 @@ def load_saved_checkpoint(model_path):
     loads a saved checkpoint and rebuilds the model
     """
     saved_model = torch.load(model_path)
-    model = saved_model['model']
+    # model = saved_model['model']
+    # model = getattr(torchvision.models, saved_model['arch_name'](pretrained=True))
+    arch_name = saved_model['arch_name']
+    model = models.densenet121(pretrained=True)
+
     model.classifier = saved_model['classifier']
     model.load_state_dict(saved_model['model_state'])
     model.class_to_idx = saved_model['model_class_index']
@@ -64,11 +69,16 @@ def process_image(image):
     img_mean = np.array([0.485, 0.456, 0.406])
     img_std  = np.array([0.229, 0.224, 0.225])
     img = Image.open(image)
-    img = img.resize((256,256))
-
     # just checking
     width, height = img.size
-    # print('width={} height={}'.format(width, height))
+    # print('initial width={} height={}'.format(width, height))
+
+    # recommendation from Udacity reviewer
+    short_side = min(width, height)
+    img = img.resize( (int((width / short_side)*256), int((height / short_side)*256)) )
+    # just checking...again
+    width, height = img.size
+    print('resized width={} height={}'.format(width, height))
 
     left = (width - 224) / 2
     top = (height - 224) / 2
@@ -172,6 +182,12 @@ def get_input_args():
                          help = 'Path to save the model checkpoints')
     parser.add_argument('--path_to_image', type = str, default = '/99/image_07833.jpg', 
                          help = 'Path to an image file')  
+    parser.add_argument('--category_names', type = str, default = 'cat_to_name.json', 
+                         help = 'Path to JSON file containing category labels')
+    parser.add_argument('--to_device', type = str, default = 'gpu', 
+                         help = 'Run model on CPU or GPU')
+    parser.add_argument('--top_k_classes', type = str, default = '3', 
+                         help = 'Top k most likely classes')
     return parser.parse_args()
 
 

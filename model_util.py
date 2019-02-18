@@ -39,6 +39,14 @@ def get_input_args():
                          help = 'Path to save the model checkpoints')
     parser.add_argument('--learn_rate', type = str, default = '0.001', 
                          help = 'Model learning rate')  
+    parser.add_argument('--arch', type = str, default = 'densenet121', 
+                         help = 'Model architecture (densenet121, vgg16)')
+    parser.add_argument('--hidden_units', type = str, default = '512', 
+                         help = 'Hidden units')
+    parser.add_argument('--epochs', type = str, default = '3', 
+                         help = 'Number of epochs')
+    parser.add_argument('--to_device', type = str, default = 'gpu', 
+                         help = 'Run model on CPU or GPU')
     return parser.parse_args()
 
 
