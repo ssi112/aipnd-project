@@ -44,6 +44,7 @@ image_datasets = {}
 dataloaders = {}
 batch = 64
 epochs = 3 # can change to 1 for testing to shorten run time
+hidden_units = 512
 optimizer = 0
 loss = 0
 
@@ -126,7 +127,7 @@ def run_validation(model, valid_data_loader, criterion):
     return valid_loss, valid_accuracy
 
 
-def build_train_network(learning_rate=0.001):
+def build_train_network(arch, learning_rate=0.001, hidden_units=512):
     """
     Uses PyTorch pretrained densenet121 CNN
     Ref: https://pytorch.org/docs/stable/torchvision/models.html
@@ -142,16 +143,21 @@ def build_train_network(learning_rate=0.001):
     for param in model.parameters():
         param.requires_grad = False
 
-    # the classifier downloaded from the model as follows:
-    # Linear(in_features=1024, out_features=1000, bias=True)
-    # update for our dataset
+    # cannot hard code the number of in_features as the model can change
+    # update for our dataset depending on model chosen by user
+    if (arch == 'vgg16'):
+        num_features = model.classifier[0].in_features
+    else:
+        # ????? above does not work with densenet121 ?????
+        # TypeError: 'Linear' object does not support indexing
+        # Linear(in_features=1024, out_features=1000, bias=True)
+        num_features = 1024
     from collections import OrderedDict
     classifier = nn.Sequential(OrderedDict([
-                   # note we have to match the number of final output features to our classifier
-                   # as the model is designed - 1024 in this case
-                  ('fc1', nn.Linear(1024, 1000)),
+                  ('fc1', nn.Linear(num_features, 512)),
                   ('relu', nn.ReLU()),
-                  ('fc2', nn.Linear(1000, 102)), # 102 output categories
+                  ('hidden', nn.Linear(512, hidden_units)),                       
+                  ('fc2', nn.Linear(hidden_units, 102)),
                   ('output', nn.LogSoftmax(dim = 1))
                   ]))
 
@@ -164,8 +170,6 @@ def build_train_network(learning_rate=0.001):
     optimizer = optim.Adam(model.classifier.parameters(), lr = learning_rate)
 
     # print( model.state_dict() )
-
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print('\nUsing device:{}\n'.format(device))
     """
     *******************************************************************************
@@ -245,15 +249,15 @@ def test_network():
     # return 
 
 
-def save_checkpoint(ckpt_path):
+def save_checkpoint(ckpt_path, arch):
     """
     Save the model for later reuse
     """
     global model    # use global version
     global optimizer, loss
     print('begin save_checkpoint()...\n')
-    input_size = model.state_dict()['classifier.fc1.weight'].size()[1] #1024
-    output_size = model.state_dict()['classifier.fc2.bias'].size()[0] #102
+    input_size = model.state_dict()['classifier.fc1.weight'].size()[1] 
+    output_size = model.state_dict()['classifier.fc2.bias'].size()[0] 
     batch_size = dataloaders['train_loader'].batch_size
 
     model_check_point = {
@@ -261,7 +265,7 @@ def save_checkpoint(ckpt_path):
         'output_size': output_size,
         'batch_size': batch,
         'epochs': epochs,
-        'arch_name': 'densenet121',
+        'arch_name': arch,
         'classifier': model.classifier,
         'model_class_index': image_datasets['train_data'].class_to_idx,
         'model_state': model.state_dict(),
@@ -278,6 +282,7 @@ def save_checkpoint(ckpt_path):
 
 def main():
     global data_dir, train_dir, valid_dir, test_dir
+    global model, device, epochs, hidden_units
     in_arg = get_input_args()
     # print(in_arg)
     data_dir = in_arg.data_dir
@@ -285,17 +290,35 @@ def main():
     valid_dir = data_dir + '/valid'
     test_dir = data_dir + '/test'
     lr = float(in_arg.learn_rate.strip().strip("'"))
+    if (in_arg.arch == 'densenet121'):
+        model = models.densenet121(pretrained=True)
+    elif (in_arg.arch == 'vgg16'):
+        model = models.vgg16(pretrained=True)
+    else:
+        print('\nERROR *** Train.py supports two models: densenet121 and vgg16 ***')
+        print('      *** Please correct and try again ***\n')
+        return
+    if (in_arg.to_device == 'gpu'):
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    else:
+        device = 'cpu'
+    epochs = in_arg.epochs
+    hidden_units = in_arg.hidden_units
     print('')
     print('data_dir: {}'.format(data_dir))
+    print('save_dir: {}'.format(in_arg.save_dir))
     print('learning_rate: {}'.format(lr))
-    print('save_dir: {}\n'.format(in_arg.save_dir))
+    print('arch: {}'.format(in_arg.arch))
+    print('hidden_units: {}'.format(in_arg.hidden_units))
+    print('epochs: {}'.format(in_arg.epochs))
+    print('device: {}'.format(in_arg.to_device))
     transformations()
     label_mapping()
-    build_train_network(lr)
+    build_train_network(in_arg.arch, lr, hidden_units)
     test_network()
     # just in case the checkpoint folder doesn't exist...
     make_folder(in_arg.save_dir)
-    save_checkpoint(in_arg.save_dir)
+    save_checkpoint(in_arg.save_dir, in_arg.arch)
     print('\ndone...')
     return 
 

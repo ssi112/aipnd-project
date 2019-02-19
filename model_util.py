@@ -41,12 +41,12 @@ def get_input_args():
                          help = 'Model learning rate')  
     parser.add_argument('--arch', type = str, default = 'densenet121', 
                          help = 'Model architecture (densenet121, vgg16)')
-    parser.add_argument('--hidden_units', type = str, default = '512', 
+    parser.add_argument('--hidden_units', type = int, default = 512, 
                          help = 'Hidden units')
-    parser.add_argument('--epochs', type = str, default = '3', 
+    parser.add_argument('--epochs', type = int, default = 3, 
                          help = 'Number of epochs')
     parser.add_argument('--to_device', type = str, default = 'gpu', 
-                         help = 'Run model on CPU or GPU')
+                         help = 'Run model on GPU (default)')
     return parser.parse_args()
 
 
