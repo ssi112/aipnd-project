@@ -2,7 +2,13 @@
 #   predict.py
 #
 # USAGE:
-#   python predict.py --data_dir flowers --save_dir checkpoints --path_to_image /9/image_06410.jpg
+#   python predict.py  
+#                     --data_dir Path to the folder of the flower images
+#                     --save_dir Path to save the model checkpoints
+#                     --path_to_image Path to an image file
+#                     --category_names Path to JSON file containing category labels
+#                     --to_device Run model on CPU or GPU
+#                     --top_k_classes Top k most likely classes
 #
 # Some Example files for testing:
 #   /3/image_06634.jpg
@@ -46,12 +52,13 @@ def load_saved_checkpoint(model_path):
     loads a saved checkpoint and rebuilds the model
     """
     saved_model = torch.load(model_path)
-    # model = saved_model['model']
-    # model = getattr(torchvision.models, saved_model['arch_name'](pretrained=True))
     arch_name = saved_model['arch_name']
-    model = models.densenet121(pretrained=True)
-
+    if (arch_name == 'densenet121'):
+        model = models.densenet121(pretrained=True)
+    else:
+        model = models.vgg16(pretrained=True)
     model.classifier = saved_model['classifier']
+    criterion = nn.NLLLoss()
     model.load_state_dict(saved_model['model_state'])
     model.class_to_idx = saved_model['model_class_index']
     optimizer = saved_model['optimizer_state']
@@ -96,13 +103,16 @@ def process_image(image):
     return torch.Tensor(img_norm) # convert back to PyTorch tensor
 
 
-def predict(image_path, model, topk=5):
+def predict(image_path, model, to_device, topk):
     """
     Predict the class (or classes) of an image using a trained deep learning model.
 
     """
     # implement the code to predict the class from an image file
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    if (to_device == 'gpu'):
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    else:
+        device = 'cpu'
     model.to(device)
     model.eval() # inference mode
     img = process_image(image_path)
@@ -140,11 +150,11 @@ def predict(image_path, model, topk=5):
     return (probs[0], classes_list)
 
 
-def show_prediction(probs, classes):
+def show_prediction(probs, classes, json_category_names):
     """
     Display probabilites and name from the image
     """
-    with open('cat_to_name.json', 'r') as f:
+    with open(json_category_names, 'r') as f:
         cat_to_name = json.load(f)
     flower_names = [cat_to_name[i] for i in classes]
 
@@ -186,7 +196,7 @@ def get_input_args():
                          help = 'Path to JSON file containing category labels')
     parser.add_argument('--to_device', type = str, default = 'gpu', 
                          help = 'Run model on CPU or GPU')
-    parser.add_argument('--top_k_classes', type = str, default = '3', 
+    parser.add_argument('--top_k_classes', type = int, default = 3, 
                          help = 'Top k most likely classes')
     return parser.parse_args()
 
@@ -202,13 +212,16 @@ def main():
     print('data_dir: {}'.format(data_dir))
     print('test_dir: {}'.format(test_dir))
     print('save_dir: {}'.format(in_arg.save_dir))
-    print('image_file: {}\n'.format(test_dir+image_file))
+    print('image_file: {}'.format(test_dir+image_file))
+    print('category_names: {}'.format(in_arg.category_names))
+    print('to_device: {}'.format(in_arg.to_device))
+    print('top_k_classes: {}'.format(in_arg.top_k_classes))
     print('')
     # make sure checkpoint exists
     if os.path.exists(in_arg.save_dir+'/trainpy_checkpoint.pth'):
         model, class_to_idx = load_saved_checkpoint(in_arg.save_dir+'/trainpy_checkpoint.pth')
-        probs, classes = predict(test_dir+image_file, model, topk=5)
-        show_prediction(probs, classes)
+        probs, classes = predict(test_dir+image_file, model, in_arg.to_device, in_arg.top_k_classes)
+        show_prediction(probs, classes, in_arg.category_names)
     else:
         print('Oops, checkpoint does NOT exist! ({})'.format(in_arg.save_dir+'/trainpy_checkpoint.pth'))
     return 

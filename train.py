@@ -146,7 +146,7 @@ def build_train_network(arch, learning_rate=0.001, hidden_units=512):
     # turns off gradient descent so we don't train them again when we use our dataset
     for param in model.parameters():
         param.requires_grad = False
-
+    # *******************************************************************************
     # cannot hard code the number of in_features as the model can change
     # update for our dataset depending on model chosen by user
     # ResNet, Inception: input_size = model.fc.in_features
@@ -154,6 +154,7 @@ def build_train_network(arch, learning_rate=0.001, hidden_units=512):
     # DenseNet: input_size = model.classifier.in_features
     # SqueezeNet: input_size = model.classifier[1].in_channels
     # AlexNet: alexnet.classifier[1].in_features
+    # *******************************************************************************
     if (arch == 'vgg16'):
         num_features = model.classifier[0].in_features
     else:
