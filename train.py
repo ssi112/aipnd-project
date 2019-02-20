@@ -23,15 +23,19 @@ from collections import OrderedDict
 import json
 from model_util import get_input_args, make_folder
 
-# ***********************
-#   WRITE THE FOLLOWING
-# ***********************
-# ✔ define transforms for training, validation and testing datasets
-# ✔ create label mapping
-# ✔ build and train network classifier
-# ✔ validate test dataset
-# ✔ test the network - print accuracy
-# ✔ save the checkpoint
+"""
+************************************************************************
+               A Note About the Number of Epochs
+************************************************************************
+Running more epochs will improve accuracy up to a point. Training loss
+will decrease slightly with more epochs, but eventually validation loss
+loss plateau and at times increase. A test run of 20 epochs was done,
+accuracy test yielded a slight increase: 91% versus 89% as opposed to  
+running with only three epochs. It looked like validation loss leveled
+out after about nine epochs. Also, run time was consideraly long with 
+20 epochs - over 38 minutes.
+************************************************************************
+"""
 
 data_dir = 'flowers'    # default - can be supplied by user
 train_dir = data_dir + '/train'
@@ -43,7 +47,7 @@ data_transforms = {}
 image_datasets = {}
 dataloaders = {}
 batch = 64
-epochs = 3 # can change to 1 for testing to shorten run time
+epochs = 3
 hidden_units = 512
 optimizer = 0
 loss = 0
@@ -145,13 +149,15 @@ def build_train_network(arch, learning_rate=0.001, hidden_units=512):
 
     # cannot hard code the number of in_features as the model can change
     # update for our dataset depending on model chosen by user
+    # ResNet, Inception: input_size = model.fc.in_features
+    # VGG: input_size = model.classifier[0].in_features
+    # DenseNet: input_size = model.classifier.in_features
+    # SqueezeNet: input_size = model.classifier[1].in_channels
+    # AlexNet: alexnet.classifier[1].in_features
     if (arch == 'vgg16'):
         num_features = model.classifier[0].in_features
     else:
-        # ????? above does not work with densenet121 ?????
-        # TypeError: 'Linear' object does not support indexing
-        # Linear(in_features=1024, out_features=1000, bias=True)
-        num_features = 1024
+        num_features = model.classifier.in_features
     from collections import OrderedDict
     classifier = nn.Sequential(OrderedDict([
                   ('fc1', nn.Linear(num_features, 512)),
@@ -259,6 +265,10 @@ def save_checkpoint(ckpt_path, arch):
     input_size = model.state_dict()['classifier.fc1.weight'].size()[1] 
     output_size = model.state_dict()['classifier.fc2.bias'].size()[0] 
     batch_size = dataloaders['train_loader'].batch_size
+
+    print('input size = ', input_size)
+    print('output size = ', output_size)
+    print('batch size = ', batch_size)
 
     model_check_point = {
         'input_size': input_size,
